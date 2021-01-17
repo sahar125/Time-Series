@@ -7,9 +7,9 @@ data <- read_csv("C:/Users/INFOTEC/Downloads/data_scientist_intern_assessment.zi
 pulses=as.numeric(data$pulses)
 
 
-#?tape 2: examinez vos donn?es
-#Un bon point de d?part est de tracer la s?rie et de l'examiner visuellement pour y d?tecter d'?ventuelles valeurs aberrantes,
-#de la volatilit? ou des irr?gularit?s
+#Etape 2: examinez vos donn?es
+#Un bon point de départ est de tracer la série et de l'examiner visuellement pour y détecter d'éventuelles valeurs aberrantes,
+#de la volatilité ou des irrégularités
 
 
 ggplot(data, aes(as.Date(timestamp), as.numeric(pulses))) + geom_line() + scale_x_date('Days')  + ylab("Daily Capital Checkouts") +
@@ -19,12 +19,12 @@ ggplot(data, aes(as.Date(timestamp), as.numeric(pulses))) + geom_line() + scale_
 
 
 #Dans certains cas,la valeur de pulses depasse  le 200 .
-# Ce sont des valeurs suspectes qui pourraient biaiser le mod?le en faussant les r?sum?s statistiques.
-#R constitue une m?thode pratique pour ?liminer les valeurs ?loign?es des s?ries chronologiques: 
+# Ce sont des valeurs suspectes qui pourraient biaiser le mod?le en faussant les résumés statistiques.
+#R constitue une m?thode pratique pour ?liminer les valeurs éloignées des s?ries chronologiques: 
 #tsclean () dans le cadre de son progiciel de pr?vision. 
-#tsclean () identifie et remplace les valeurs aberrantes ? l'aide du lissage et de la d?composition de s?ries
+#tsclean () identifie et remplace les valeurs aberrantes à l'aide du lissage et de la d?composition de séries
 
-#Cette m?thode est ?galement capable d'entrer les valeurs manquantes.
+#Cette méthode est ?galement capable d'entrer les valeurs manquantes.
 
 
 count_ts = ts(data[, c('pulses')],frequency=30)
@@ -35,11 +35,11 @@ plot(count_ts)
 ggplot() +
   geom_line(data = data[1:1900,], aes(x = timestamp, y = clean_cnt)) + ylab('Cleaned data')
 
-#M?me apr?s la suppression des valeurs aberrantes, les donn?es quotidiennes restent assez volatiles. 
-#Visuellement, nous pourrions tracer une ligne ? travers la s?rie en tra?ant ses creux et ses pics plus importants tout en lissant les fluctuations bruyantes.
-#Cette ligne peut ?tre d?crite par l'un des concepts les plus simples ,  mais aussi tr?s utiles , de l'analyse des s?ries chronologiques,appel? moyenne mobile.
+#Meme aprés la suppression des valeurs aberrantes, les données quotidiennes restent assez volatiles. 
+#Visuellement, nous pourrions tracer une ligne à travers la s?rie en tra?ant ses creux et ses pics plus importants tout en lissant les fluctuations bruyantes.
+#Cette ligne peut ?tre d?crite par l'un des concepts les plus simples ,  mais aussi tr?s utiles , de l'analyse des s?ries chronologiques,appelé moyenne mobile.
 #C'est un concept intuitif qui fait la moyenne des points sur plusieurs p?riodes de temps, 
-#lissant ainsi les donn?es observ?es en une s?rie pr?visible plus stable.
+#lissant ainsi les donn?es observées en une s?rie pr?visible plus stable.
 #Plus la fen?tre de la moyenne mobile est large, plus la s?rie originale est lisse. 
 
 
@@ -54,15 +54,15 @@ ggplot() +
   ylab('pulsesl')
 
 
-#?tape 3: d?composez vos donn?es
-#Les ?l?ments constitutifs d'une analyse de s?rie chronologique sont la saisonnalit?, la tendance et le cycle.
-#Ces composants intuitifs capturent les mod?les historiques de la s?rie.
-count_ma = ts(na.omit(data$cnt_ma), frequency=30)#Puisque nous utilisons des donn?es quotidiennes liss?es, nous avons 30 observations par mois.
+#?tape 3: décomposez vos donn?es
+#Les élèments constitutifs d'une analyse de série chronologique sont la saisonnalité, la tendance et le cycle.
+#Ces composants intuitifs capturent les mod?les historiques de la série.
+count_ma = ts(na.omit(data$cnt_ma), frequency=30)#Puisque nous utilisons des donn?es quotidiennes lissées, nous avons 30 observations par mois.
 decomp = stl(count_ma, s.window="periodic")
 deseasonal_cnt <- seasadj(decomp)
 plot(decomp)
 
-#?tape 4: stationnarit?
+#?tape 4: stationnarité
 library(aTSA)
 adf.test(count_ma )
 #p-value=0.01 donc notre serie est stationnaire
@@ -73,18 +73,18 @@ Pacf(count_ma, main='')
 
 
 
-#?tape 6: Monter un mod?le ARIMA
+#?tape 6: Monter un modele ARIMA
 auto.arima(deseasonal_cnt, seasonal=FALSE)
 #Le coefficient AR (1) p = 0.3441  
-#nous indique que la valeur suivante de la s?rie est consid?r?e comme une valeur ant?rieure amortie par un facteur de 0.3441  et d?pend du retard d'erreur
+#nous indique que la valeur suivante de la série est consid?r?e comme une valeur anterieure amortie par un facteur de 0.3441  et d?pend du retard d'erreur
 
 
-#?tape 7: ?valuer et it?rer
+#?tape 7: évaluer et it?rer
 #
 fit<-auto.arima(deseasonal_cnt, seasonal=FALSE)
 tsdisplay(residuals(fit), lag.max=45, main='(2,1,0) Model Residuals')
-#Il existe une tendance claire dans ACF / PACF et les trac?s de r?sidus de mod?le se r?p?tant
-#au d?calage 8. Cela sugg?re que notre mod?le peut ?tre pr?f?rable avec une sp?cification diff?rente,
+#Il existe une tendance claire dans ACF / PACF et les tracés de résidus de modèle se répétant
+#au décalage 8. Cela suggére que notre modèle peut ?tre préferable avec une spécification différente,
 #telle que p = 8 ou q = 8 . 
 fit2 = arima(deseasonal_cnt,order=c(2,1,8))
 fit2
@@ -96,7 +96,7 @@ arima(x = deseasonal_cnt, order = c(2, 1, 8))
 fcast <- forecast(fit2,7)
 plot(fcast,type = "l")
 hold <- window(ts(deseasonal_cnt), start=1500)
-fit_no_holdout = arima(ts(deseasonal_cnt[-c(1500:1998)]), order=c(2,1,7))
+fit_no_holdout = arima(ts(deseasonal_cnt[-c(1500:1998)]), order=c(2,1,8))
 fcast_no_holdout <- forecast(fit_no_holdout,25)
 plot(forecast(fit_no_holdout,25),type = "l")
 plot(fcast_no_holdout, main=" ")
